@@ -1,4 +1,4 @@
-# finance-api — MeuCaixa (backend)
+# finance-api — Banco Sentry (backend)
 
 API REST de gestão financeira feita com **Quarkus 3** + **PostgreSQL**.
 O front-end (Angular) está no repositório **finance-ui**.
