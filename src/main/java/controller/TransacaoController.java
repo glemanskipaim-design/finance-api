@@ -3,31 +3,42 @@ package controller;
 import entity.Categoria;
 import entity.Conta;
 import entity.Transacao;
+import io.quarkus.security.Authenticated;
+import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Response;
+import security.UsuarioLogado;
+import service.ApiException;
 
 import java.util.List;
 
 @Path("transacao")
+@Authenticated
 public class TransacaoController {
+    @Inject
+    UsuarioLogado logado;
+
+    /** Lista as transações; filtros opcionais: ?contaId=1&categoriaId=2 */
     @GET
-    public List<Transacao> todas() {
-        return Transacao.listAll();
+    public List<Transacao> todas(@QueryParam("contaId") Integer contaId,
+                                 @QueryParam("categoriaId") Integer categoriaId) {
+        return Transacao.filtrar(logado.id(), contaId, categoriaId);
     }
 
     @GET
     @Path("{id}")
     public Transacao buscar(@PathParam("id") Integer id) {
-        Transacao obj = Transacao.findById(id);
-        if (obj == null) throw new NotFoundException();
-        return obj;
+        return buscarDoUsuario(id);
     }
 
     @POST
     @Transactional
-    public Response save(Transacao obj) {
+    public Response save(@Valid Transacao obj) {
         obj.id = null;
+        obj.transferencia = null; // transferência só pelo endpoint /transferencia
+        obj.descricao = obj.descricao.trim();
         resolverRelacionamentos(obj);
         obj.persist();
         return Response.status(Response.Status.CREATED).entity(obj).build();
@@ -36,10 +47,12 @@ public class TransacaoController {
     @PUT
     @Path("{id}")
     @Transactional
-    public Transacao update(@PathParam("id") Integer id, Transacao dados) {
-        Transacao obj = Transacao.findById(id);
-        if (obj == null) throw new NotFoundException();
-        obj.descricao = dados.descricao;
+    public Transacao update(@PathParam("id") Integer id, @Valid Transacao dados) {
+        Transacao obj = buscarDoUsuario(id);
+        if (obj.transferencia != null) {
+            throw ApiException.conflito("transação de transferência não pode ser editada; exclua e lance a transferência de novo");
+        }
+        obj.descricao = dados.descricao.trim();
         obj.valor = dados.valor;
         obj.tipo = dados.tipo;
         obj.dataTransacao = dados.dataTransacao;
@@ -49,20 +62,32 @@ public class TransacaoController {
         return obj;
     }
 
+    /** Excluir uma perna de transferência exclui as duas, para o saldo não ficar torto. */
     @DELETE
     @Path("{id}")
     @Transactional
     public Response delete(@PathParam("id") Integer id) {
-        if (!Transacao.deleteById(id)) throw new NotFoundException();
+        Transacao obj = buscarDoUsuario(id);
+        if (obj.transferencia != null) {
+            Transacao.delete("transferencia", obj.transferencia);
+        } else {
+            obj.delete();
+        }
         return Response.noContent().build();
     }
 
+    private Transacao buscarDoUsuario(Integer id) {
+        Transacao obj = Transacao.doUsuario(id, logado.id());
+        if (obj == null) throw ApiException.naoEncontrado("transação não encontrada");
+        return obj;
+    }
+
+    // Troca os {id} recebidos pelas entidades do banco, conferindo que são do usuário logado.
     private void resolverRelacionamentos(Transacao t) {
-        if (t.conta == null || t.conta.id == null || (t.conta = Conta.findById(t.conta.id)) == null)
-            throw new BadRequestException("conta inexistente");
-        if (t.categoria == null || t.categoria.id == null || (t.categoria = Categoria.findById(t.categoria.id)) == null)
-            throw new BadRequestException("categoria inexistente");
+        Integer usuarioId = logado.id();
+        if (t.conta == null || t.conta.id == null || (t.conta = Conta.doUsuario(t.conta.id, usuarioId)) == null)
+            throw ApiException.invalido("conta inexistente");
+        if (t.categoria == null || t.categoria.id == null || (t.categoria = Categoria.doUsuario(t.categoria.id, usuarioId)) == null)
+            throw ApiException.invalido("categoria inexistente");
     }
 }
-
-

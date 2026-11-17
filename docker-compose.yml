@@ -1,0 +1,19 @@
+# Banco PostgreSQL do projeto. Subir: docker compose up -d
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: finance-postgres
+    environment:
+      POSTGRES_DB: financeiro
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - finance-dados:/var/lib/postgresql/data
+      # roda o script de criação das tabelas na primeira vez que o banco sobe
+      - ./database/financeiro.sql:/docker-entrypoint-initdb.d/1-financeiro.sql:ro
+      - ./database/criar-banco-teste.sql:/docker-entrypoint-initdb.d/2-criar-banco-teste.sql:ro
+
+volumes:
+  finance-dados:
