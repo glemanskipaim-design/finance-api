@@ -3,6 +3,7 @@ package controller;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.ContentType;
 import org.junit.jupiter.api.Test;
+import security.TokenService;
 
 import java.util.Map;
 
@@ -13,6 +14,7 @@ import static org.hamcrest.Matchers.hasSize;
 /** Fluxo completo pela API: cadastro, contas, categorias, transações, transferência e saldo. */
 @QuarkusTest
 class FluxoFinanceiroTest {
+    private static final String COOKIE = TokenService.COOKIE;
 
     /** Registra um usuário novo e devolve o JWT que veio no cookie httpOnly. */
     private String registrar(String email) {
@@ -20,11 +22,11 @@ class FluxoFinanceiroTest {
                 .body(Map.of("nome", "Teste", "email", email, "senha", "segredo123"))
                 .post("/api/auth/registrar")
                 .then().statusCode(201)
-                .extract().cookie("finance_token");
+                .extract().cookie(COOKIE);
     }
 
     private int criar(String token, String recurso, Object corpo) {
-        return given().cookie("finance_token", token).contentType(ContentType.JSON).body(corpo)
+        return given().cookie(COOKIE, token).contentType(ContentType.JSON).body(corpo)
                 .post("/api/" + recurso)
                 .then().statusCode(201)
                 .extract().path("id");
@@ -59,19 +61,19 @@ class FluxoFinanceiroTest {
                 "dataTransacao", "2026-11-06", "conta", Map.of("id", banco), "categoria", Map.of("id", mercado)));
 
         // Transferência: sai 500 do Banco e entra 500 na Carteira.
-        given().cookie("finance_token", token).contentType(ContentType.JSON)
+        given().cookie(COOKIE, token).contentType(ContentType.JSON)
                 .body(Map.of("contaOrigemId", banco, "contaDestinoId", carteira, "valor", 500, "data", "2026-11-07"))
                 .post("/api/transferencia")
                 .then().statusCode(201);
 
         // Filtros
-        given().cookie("finance_token", token).queryParam("contaId", banco)
+        given().cookie(COOKIE, token).queryParam("contaId", banco)
                 .get("/api/transacao").then().statusCode(200).body("$", hasSize(3));
-        given().cookie("finance_token", token).queryParam("categoriaId", mercado)
+        given().cookie(COOKIE, token).queryParam("categoriaId", mercado)
                 .get("/api/transacao").then().statusCode(200).body("$", hasSize(1));
 
         // Saldos: Banco = 3000 - 250,50 - 500; Carteira = 500; geral = 2749,50
-        given().cookie("finance_token", token).get("/api/saldo")
+        given().cookie(COOKIE, token).get("/api/saldo")
                 .then().statusCode(200)
                 .body("contas.find { it.descricao == 'Banco' }.saldo", equalTo(2249.50f))
                 .body("contas.find { it.descricao == 'Carteira' }.saldo", equalTo(500.00f))
@@ -84,7 +86,7 @@ class FluxoFinanceiroTest {
         String tokenB = registrar("b@teste.com");
         int contaDoA = criar(tokenA, "conta", Map.of("descricao", "Conta do A"));
 
-        given().cookie("finance_token", tokenB).get("/api/conta/" + contaDoA).then().statusCode(404);
-        given().cookie("finance_token", tokenB).get("/api/conta").then().body("$", hasSize(0));
+        given().cookie(COOKIE, tokenB).get("/api/conta/" + contaDoA).then().statusCode(404);
+        given().cookie(COOKIE, tokenB).get("/api/conta").then().body("$", hasSize(0));
     }
 }

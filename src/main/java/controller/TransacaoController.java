@@ -10,7 +10,7 @@ import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Response;
 import security.UsuarioLogado;
-import service.ApiException;
+import erro.ApiException;
 
 import java.util.List;
 
@@ -82,12 +82,23 @@ public class TransacaoController {
         return obj;
     }
 
-    // Troca os {id} recebidos pelas entidades do banco, conferindo que são do usuário logado.
-    private void resolverRelacionamentos(Transacao t) {
+    // O JSON traz só o id da conta e da categoria ({"conta": {"id": 1}}).
+    // Aqui buscamos as entidades no banco, conferindo que são do usuário logado.
+    private void resolverRelacionamentos(Transacao transacao) {
         Integer usuarioId = logado.id();
-        if (t.conta == null || t.conta.id == null || (t.conta = Conta.doUsuario(t.conta.id, usuarioId)) == null)
-            throw ApiException.invalido("conta inexistente");
-        if (t.categoria == null || t.categoria.id == null || (t.categoria = Categoria.doUsuario(t.categoria.id, usuarioId)) == null)
-            throw ApiException.invalido("categoria inexistente");
+
+        Conta conta = null;
+        if (transacao.conta != null && transacao.conta.id != null) {
+            conta = Conta.doUsuario(transacao.conta.id, usuarioId);
+        }
+        if (conta == null) throw ApiException.invalido("conta inexistente");
+        transacao.conta = conta;
+
+        Categoria categoria = null;
+        if (transacao.categoria != null && transacao.categoria.id != null) {
+            categoria = Categoria.doUsuario(transacao.categoria.id, usuarioId);
+        }
+        if (categoria == null) throw ApiException.invalido("categoria inexistente");
+        transacao.categoria = categoria;
     }
 }

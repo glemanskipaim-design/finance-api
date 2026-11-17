@@ -1,4 +1,4 @@
-package service;
+package erro;
 
 import dto.Erro;
 import jakarta.ws.rs.core.MediaType;

@@ -37,7 +37,7 @@ src/main/java/
   entity/       entidades JPA/Panache (Usuario, Conta, Categoria, Transacao)
   dto/          objetos de entrada/saída que não são entidades (login, transferência, saldo)
   security/     geração do token/cookie e usuário logado
-  service/      erro de regra de negócio -> JSON {"mensagem": "..."}
+  erro/         erro de regra de negócio -> JSON {"mensagem": "..."}
 database/       script SQL do banco
 ```
 

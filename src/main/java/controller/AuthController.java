@@ -15,7 +15,7 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.core.Response;
 import security.TokenService;
 import security.UsuarioLogado;
-import service.ApiException;
+import erro.ApiException;
 
 import java.util.Locale;
 

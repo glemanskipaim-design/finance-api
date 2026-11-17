@@ -1,4 +1,4 @@
-package service;
+package erro;
 
 /** Erro de regra de negócio com o status HTTP a devolver; vira JSON {"mensagem": ...}. */
 public class ApiException extends RuntimeException {

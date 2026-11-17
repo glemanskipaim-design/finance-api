@@ -12,7 +12,7 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.core.Response;
 import security.UsuarioLogado;
-import service.ApiException;
+import erro.ApiException;
 
 import java.util.UUID;
 
@@ -40,9 +40,12 @@ public class TransferenciaController {
         }
 
         String codigo = UUID.randomUUID().toString();
-        String obs = dados.descricao() == null || dados.descricao().isBlank() ? "" : " - " + dados.descricao().trim();
-        Transacao saida = perna(codigo, origem, Transacao.DESPESA, "Transferência para " + destino.descricao + obs, dados);
-        Transacao entrada = perna(codigo, destino, Transacao.RECEITA, "Transferência de " + origem.descricao + obs, dados);
+        String observacao = "";
+        if (dados.descricao() != null && !dados.descricao().isBlank()) {
+            observacao = " - " + dados.descricao().trim();
+        }
+        Transacao saida = perna(codigo, origem, Transacao.DESPESA, "Transferência para " + destino.descricao + observacao, dados);
+        Transacao entrada = perna(codigo, destino, Transacao.RECEITA, "Transferência de " + origem.descricao + observacao, dados);
 
         return Response.status(Response.Status.CREATED)
                 .entity(new TransferenciaResponse(codigo, saida, entrada))
@@ -50,14 +53,14 @@ public class TransferenciaController {
     }
 
     private static Transacao perna(String codigo, Conta conta, String tipo, String descricao, TransferenciaRequest dados) {
-        Transacao t = new Transacao();
-        t.transferencia = codigo;
-        t.conta = conta;
-        t.tipo = tipo;
-        t.descricao = descricao;
-        t.valor = dados.valor();
-        t.dataTransacao = dados.data();
-        t.persist();
-        return t;
+        Transacao transacao = new Transacao();
+        transacao.transferencia = codigo;
+        transacao.conta = conta;
+        transacao.tipo = tipo;
+        transacao.descricao = descricao;
+        transacao.valor = dados.valor();
+        transacao.dataTransacao = dados.data();
+        transacao.persist();
+        return transacao;
     }
 }

@@ -23,16 +23,18 @@ public class SaldoController {
     /** Saldo de cada conta (receitas - despesas) e o saldo geral (soma das contas). */
     @GET
     public SaldoResponse saldo() {
+        Integer usuarioId = logado.id();
         List<SaldoConta> contas = new ArrayList<>();
         BigDecimal total = BigDecimal.ZERO;
 
-        for (Conta conta : Conta.doUsuario(logado.id())) {
+        for (Conta conta : Conta.doUsuario(usuarioId)) {
             BigDecimal saldo = BigDecimal.ZERO;
-            for (Transacao t : Transacao.filtrar(logado.id(), conta.id, null)) {
-                if (Transacao.RECEITA.equals(t.tipo)) {
-                    saldo = saldo.add(t.valor);
+            Integer semFiltroDeCategoria = null;
+            for (Transacao transacao : Transacao.filtrar(usuarioId, conta.id, semFiltroDeCategoria)) {
+                if (Transacao.RECEITA.equals(transacao.tipo)) {
+                    saldo = saldo.add(transacao.valor);
                 } else {
-                    saldo = saldo.subtract(t.valor);
+                    saldo = saldo.subtract(transacao.valor);
                 }
             }
             contas.add(new SaldoConta(conta.id, conta.descricao, saldo));

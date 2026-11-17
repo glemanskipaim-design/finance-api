@@ -9,7 +9,7 @@ import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Response;
 import security.UsuarioLogado;
-import service.ApiException;
+import erro.ApiException;
 
 import java.util.List;
 
