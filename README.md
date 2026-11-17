@@ -50,7 +50,7 @@ database/       script SQL do banco
 docker compose up -d
 
 # 2. Rodar a API em modo dev (http://localhost:8080)
-./mvnw quarkus:dev          # Windows (cmd/PowerShell): mvnw quarkus:dev
+./mvnw quarkus:dev          # Windows (cmd/PowerShell): .\mvnw quarkus:dev
 ```
 
 Sem Docker: instale o PostgreSQL, crie os bancos `financeiro` e `financeiro_teste`
